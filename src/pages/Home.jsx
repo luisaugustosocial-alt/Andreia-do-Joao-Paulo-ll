@@ -1,6 +1,6 @@
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import { CalendarDays, Users, BarChart3, Newspaper, HeartHandshake, Stethoscope, BookOpen, Building2, Venus, Goal, Scale, MessageSquareText, Lightbulb, ClipboardList } from 'lucide-react'
+import { CalendarDays, Users, BarChart3, Newspaper, HeartHandshake, Stethoscope, BookOpen, Building2, UserRound, Goal, Scale, MessageSquareText, Lightbulb, ClipboardList } from 'lucide-react'
 import { stats, agenda, news } from '../data/mockData'
 
 const causes = [
@@ -8,7 +8,7 @@ const causes = [
   [Stethoscope, 'Saúde'],
   [BookOpen, 'Educação'],
   [Building2, 'Infraestrutura'],
-  [Venus, 'Direitos das Mulheres'],
+  [UserRound, 'Direitos das Mulheres'],
   [Users, 'Juventude'],
   [Goal, 'Esporte e Lazer'],
   [Users, 'Comunidades e Bairros'],
