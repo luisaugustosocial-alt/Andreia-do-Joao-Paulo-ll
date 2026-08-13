@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Inbox, CalendarDays, Newspaper, FileText,
-  BarChart3, Image, Settings, LogOut, Plus, Trash2, Check
+  BarChart3, Image, Settings, LogOut, Plus, Trash2, Check, Archive
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../services/firebase'
@@ -17,6 +17,7 @@ import {
 const menu = [
   ['dashboard', LayoutDashboard, 'Visão geral'],
   ['demandas', Inbox, 'Demandas'],
+  ['arquivadas', Archive, 'Arquivadas'],
   ['agenda', CalendarDays, 'Agenda'],
   ['noticias', Newspaper, 'Notícias'],
   ['proposicoes', FileText, 'Proposições'],
@@ -103,7 +104,8 @@ export default function Admin() {
         </header>
 
         {tab === 'dashboard' && <Dashboard stats={stats} demandas={demandas} agenda={agenda} />}
-        {tab === 'demandas' && <Demandas data={demandas} />}
+        {tab === 'demandas' && <Demandas data={demandas.filter(item => item.arquivada !== true)} />}
+        {tab === 'arquivadas' && <Arquivadas data={demandas.filter(item => item.arquivada === true)} />}
         {tab === 'agenda' && <Agenda data={agenda} />}
         {tab === 'noticias' && <Noticias data={noticias} />}
         {tab === 'proposicoes' && <Proposicoes data={proposicoes} />}
@@ -148,6 +150,7 @@ function Dashboard({ stats, demandas, agenda }) {
 
 function Demandas({ data }) {
   const [drafts, setDrafts] = useState({})
+  const [openId, setOpenId] = useState(null)
 
   function getDraft(item) {
     return drafts[item.id] || {
@@ -166,13 +169,59 @@ function Demandas({ data }) {
     }))
   }
 
+  function formatDate(value) {
+    if (!value) return 'Não informado'
+
+    try {
+      if (typeof value?.toDate === 'function') {
+        return value.toDate().toLocaleString('pt-BR')
+      }
+
+      if (typeof value === 'string') {
+        return new Date(value).toLocaleString('pt-BR')
+      }
+
+      return String(value)
+    } catch {
+      return 'Não informado'
+    }
+  }
+
+  async function archiveDemand(item) {
+    const confirmed = window.confirm('Arquivar esta demanda? Ela sairá da lista principal, mas continuará salva.')
+    if (!confirmed) return
+
+    await updateDocument('demandas', item.id, {
+      arquivada: true,
+      arquivadaEm: new Date().toISOString()
+    })
+  }
+
+  async function deleteDemand(item) {
+    const confirmed = window.confirm(
+      'Excluir esta demanda definitivamente? Essa ação não poderá ser desfeita.'
+    )
+    if (!confirmed) return
+
+    await removeDocument('demandas', item.id)
+
+    try {
+      await removeDocument('acompanhamentos', item.protocolo || item.id)
+    } catch (error) {
+      console.warn('Acompanhamento público não removido:', error)
+    }
+  }
+
   async function saveUpdate(item) {
     const draft = getDraft(item)
     const previousPublic = item.atualizacaoPublica || ''
     const statusChanged = draft.status !== (item.status || 'Recebida')
     const messageChanged = draft.atualizacaoPublica !== previousPublic
 
-    const existingPublicHistory = Array.isArray(item.historicoPublico) ? item.historicoPublico : []
+    const existingPublicHistory = Array.isArray(item.historicoPublico)
+      ? item.historicoPublico
+      : []
+
     const newEntry = {
       status: draft.status,
       mensagem: draft.atualizacaoPublica || 'Status atualizado pelo gabinete.',
@@ -211,13 +260,15 @@ function Demandas({ data }) {
       <div className="panel-head">
         <div>
           <h2>Demandas do Gabinete Online</h2>
-          <p>Atualize o andamento e publique uma mensagem para o cidadão acompanhar pelo protocolo.</p>
+          <p>Veja todos os dados enviados e atualize o andamento de cada solicitação.</p>
         </div>
+        <span>{data.length} demanda(s)</span>
       </div>
 
       <div className="demand-admin-list">
         {data.map(item => {
           const draft = getDraft(item)
+          const isOpen = openId === item.id
 
           return (
             <article className="demand-admin-card" key={item.id}>
@@ -225,15 +276,86 @@ function Demandas({ data }) {
                 <div>
                   <span className="section-kicker">{item.protocolo || item.id}</span>
                   <h3>{item.assunto || 'Solicitação'}</h3>
-                  <p>{item.nome} · {item.bairro} · {item.categoria}</p>
+                  <p>
+                    {item.nome || 'Nome não informado'} · {item.bairro || 'Bairro não informado'} · {item.categoria || 'Sem categoria'}
+                  </p>
                 </div>
-                <span className="status-chip">{item.status || 'Recebida'}</span>
+
+                <div className="demand-card-actions">
+                  <span className="status-chip">{item.status || 'Recebida'}</span>
+                  <button
+                    type="button"
+                    className="btn btn-outline admin-small-button"
+                    onClick={() => setOpenId(isOpen ? null : item.id)}
+                  >
+                    {isOpen ? 'Ocultar dados' : 'Ver todos os dados'}
+                  </button>
+                </div>
               </div>
 
-              <div className="demand-private-details">
-                <p><strong>Descrição:</strong> {item.descricao || 'Sem descrição.'}</p>
-                <p><strong>Contato:</strong> {item.telefone || '—'} {item.email ? `· ${item.email}` : ''}</p>
-              </div>
+              {isOpen && (
+                <div className="demand-full-details">
+                  <div className="demand-detail-item">
+                    <span>Nome completo</span>
+                    <strong>{item.nome || 'Não informado'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Telefone</span>
+                    <strong>{item.telefone || 'Não informado'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>E-mail</span>
+                    <strong>{item.email || 'Não informado'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Bairro / Comunidade</span>
+                    <strong>{item.bairro || 'Não informado'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Categoria</span>
+                    <strong>{item.categoria || 'Não informada'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Assunto</span>
+                    <strong>{item.assunto || 'Não informado'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Protocolo</span>
+                    <strong>{item.protocolo || item.id}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Status</span>
+                    <strong>{item.status || 'Recebida'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Origem</span>
+                    <strong>{item.origem || 'Gabinete Online'}</strong>
+                  </div>
+
+                  <div className="demand-detail-item">
+                    <span>Data de envio</span>
+                    <strong>{formatDate(item.createdAt)}</strong>
+                  </div>
+
+                  <div className="demand-detail-item full-width">
+                    <span>Descrição completa da demanda</span>
+                    <p>{item.descricao || 'Nenhuma descrição informada.'}</p>
+                  </div>
+
+                  <div className="demand-detail-item full-width">
+                    <span>Última atualização pública</span>
+                    <p>{item.atualizacaoPublica || 'Nenhuma atualização publicada ainda.'}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="demand-update-grid">
                 <label>
@@ -261,14 +383,99 @@ function Demandas({ data }) {
                 </label>
               </div>
 
-              <button className="btn btn-primary" onClick={() => saveUpdate(item)}>
-                <Check size={16}/> Salvar atualização
-              </button>
+              <div className="demand-action-row">
+                <button className="btn btn-primary" onClick={() => saveUpdate(item)}>
+                  <Check size={16}/> Salvar atualização
+                </button>
+
+                <button className="btn btn-outline" onClick={() => archiveDemand(item)}>
+                  <Archive size={16}/> Arquivar
+                </button>
+
+                <button className="btn danger-action" onClick={() => deleteDemand(item)}>
+                  <Trash2 size={16}/> Excluir definitivamente
+                </button>
+              </div>
             </article>
           )
         })}
 
         {!data.length && <p>Nenhuma demanda recebida ainda.</p>}
+      </div>
+    </section>
+  )
+}
+
+
+function Arquivadas({ data }) {
+  async function restoreDemand(item) {
+    const confirmed = window.confirm('Restaurar esta demanda para a lista principal?')
+    if (!confirmed) return
+
+    await updateDocument('demandas', item.id, {
+      arquivada: false,
+      arquivadaEm: null
+    })
+  }
+
+  async function deleteDemand(item) {
+    const confirmed = window.confirm(
+      'Excluir esta demanda definitivamente? Essa ação não poderá ser desfeita.'
+    )
+    if (!confirmed) return
+
+    await removeDocument('demandas', item.id)
+
+    try {
+      await removeDocument('acompanhamentos', item.protocolo || item.id)
+    } catch (error) {
+      console.warn('Acompanhamento público não removido:', error)
+    }
+  }
+
+  return (
+    <section className="admin-panel">
+      <div className="panel-head">
+        <div>
+          <h2>Demandas arquivadas</h2>
+          <p>Demandas retiradas da lista principal, mas mantidas no histórico do gabinete.</p>
+        </div>
+        <span>{data.length} arquivada(s)</span>
+      </div>
+
+      <div className="demand-admin-list">
+        {data.map(item => (
+          <article className="demand-admin-card archived-card" key={item.id}>
+            <div className="demand-admin-head">
+              <div>
+                <span className="section-kicker">{item.protocolo || item.id}</span>
+                <h3>{item.assunto || 'Solicitação'}</h3>
+                <p>
+                  {item.nome || 'Nome não informado'} · {item.bairro || 'Bairro não informado'} · {item.categoria || 'Sem categoria'}
+                </p>
+              </div>
+              <span className="status-chip">Arquivada</span>
+            </div>
+
+            <div className="demand-private-details">
+              <p><strong>Status anterior:</strong> {item.status || 'Não informado'}</p>
+              <p><strong>Descrição:</strong> {item.descricao || 'Sem descrição.'}</p>
+              <p><strong>Contato:</strong> {item.telefone || '—'} {item.email ? `· ${item.email}` : ''}</p>
+            </div>
+
+            <div className="demand-action-row">
+              <button className="btn btn-primary" onClick={() => restoreDemand(item)}>
+                Restaurar
+              </button>
+
+              <button className="btn danger-action" onClick={() => deleteDemand(item)}>
+                <Trash2 size={16}/> Excluir definitivamente
+              </button>
+            </div>
+          </article>
+        ))}
+
+        {!data.length && <p>Nenhuma demanda arquivada.</p>}
       </div>
     </section>
   )
