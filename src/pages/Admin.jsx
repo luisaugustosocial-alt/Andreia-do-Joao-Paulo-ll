@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LayoutDashboard, Inbox, CalendarDays, Newspaper, FileText, BarChart3, Image, Settings, LogOut } from 'lucide-react'
+import { signOut } from 'firebase/auth'
+import { auth } from '../services/firebase'
+import { useNavigate } from 'react-router-dom'
 import { demands, agenda, news, stats } from '../data/mockData'
 
 const menu = [
@@ -16,6 +19,12 @@ const menu = [
 
 export default function Admin() {
   const [tab, setTab] = useState('dashboard')
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    await signOut(auth)
+    navigate('/admin/login', { replace: true })
+  }
 
   return (
     <div className="admin-shell">
@@ -34,7 +43,7 @@ export default function Admin() {
           ))}
         </nav>
 
-        <Link className="admin-back" to="/"><LogOut size={18}/> Voltar ao site</Link>
+        <button className="admin-back admin-logout" onClick={handleLogout}><LogOut size={18}/> Sair do painel</button>
       </aside>
 
       <main className="admin-main">
