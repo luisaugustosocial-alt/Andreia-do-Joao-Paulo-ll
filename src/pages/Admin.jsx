@@ -5,6 +5,7 @@ import {
   BarChart3, Image, Settings, LogOut, Plus, Trash2, Check, Archive
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
+import { upload } from '@imagekit/javascript'
 import { auth } from '../services/firebase'
 import {
   createDocument,
@@ -572,26 +573,238 @@ function Agenda({ data }) {
 }
 
 function Noticias({ data }) {
-  const [form, setForm] = useState({ titulo:'', categoria:'Mandato', data:'', resumo:'' })
+  const [form, setForm] = useState({
+    titulo: '',
+    categoria: 'Mandato',
+    data: '',
+    resumo: '',
+    conteudo: '',
+    imagemUrl: '',
+    imagemFileId: ''
+  })
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [selected, setSelected] = useState(null)
+  const [error, setError] = useState('')
+
+  function chooseFile(event) {
+    const selectedFile = event.target.files?.[0]
+    if (!selectedFile) return
+
+    if (!selectedFile.type.startsWith('image/')) {
+      setError('Escolha um arquivo de imagem.')
+      return
+    }
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError('A imagem deve ter no máximo 10 MB.')
+      return
+    }
+
+    setError('')
+    setFile(selectedFile)
+    if (preview) URL.revokeObjectURL(preview)
+    setPreview(URL.createObjectURL(selectedFile))
+  }
+
+  async function uploadImage() {
+    if (!file) return null
+
+    const user = auth.currentUser
+    if (!user) throw new Error('Administrador não autenticado.')
+
+    const idToken = await user.getIdToken()
+
+    const authResponse = await fetch('/api/imagekit-auth', {
+      headers: {
+        Authorization: `Bearer ${idToken}`
+      }
+    })
+
+    if (!authResponse.ok) {
+      throw new Error(await authResponse.text())
+    }
+
+    const { token, expire, signature, publicKey } = await authResponse.json()
+
+    return upload({
+      file,
+      fileName: `${Date.now()}-${file.name.replace(/\s+/g, '-').toLowerCase()}`,
+      folder: '/site-andreia/noticias',
+      token,
+      expire,
+      signature,
+      publicKey,
+      onProgress: event => {
+        if (event.total) {
+          setProgress(Math.round((event.loaded / event.total) * 100))
+        }
+      }
+    })
+  }
 
   async function submit(e) {
     e.preventDefault()
-    if (!form.titulo) return
-    await createDocument('noticias', form)
-    setForm({ titulo:'', categoria:'Mandato', data:'', resumo:'' })
+    setError('')
+
+    if (!form.titulo || !form.data || !form.resumo || !form.conteudo) {
+      setError('Preencha título, data, resumo e texto completo.')
+      return
+    }
+
+    if (!file) {
+      setError('Escolha uma foto para a notícia.')
+      return
+    }
+
+    setUploading(true)
+    setProgress(0)
+
+    try {
+      const uploaded = await uploadImage()
+
+      await createDocument('noticias', {
+        titulo: form.titulo,
+        categoria: form.categoria,
+        data: form.data,
+        resumo: form.resumo,
+        conteudo: form.conteudo,
+        imagemUrl: uploaded.url,
+        imagemFileId: uploaded.fileId || ''
+      })
+
+      if (preview) URL.revokeObjectURL(preview)
+
+      setForm({
+        titulo: '',
+        categoria: 'Mandato',
+        data: '',
+        resumo: '',
+        conteudo: '',
+        imagemUrl: '',
+        imagemFileId: ''
+      })
+      setFile(null)
+      setPreview('')
+      setProgress(0)
+    } catch (err) {
+      console.error(err)
+      setError('Não foi possível publicar a notícia. Verifique a imagem e tente novamente.')
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
     <CrudSection title="Notícias" form={
-      <form className="admin-form" onSubmit={submit}>
-        <input placeholder="Título" value={form.titulo} onChange={e=>setForm({...form,titulo:e.target.value})}/>
-        <input placeholder="Categoria" value={form.categoria} onChange={e=>setForm({...form,categoria:e.target.value})}/>
-        <input type="date" value={form.data} onChange={e=>setForm({...form,data:e.target.value})}/>
-        <textarea placeholder="Resumo" value={form.resumo} onChange={e=>setForm({...form,resumo:e.target.value})}/>
-        <button className="btn btn-primary"><Plus size={16}/> Publicar notícia</button>
+      <form className="admin-form news-admin-form" onSubmit={submit}>
+        <input
+          placeholder="Título"
+          value={form.titulo}
+          onChange={e => setForm({ ...form, titulo: e.target.value })}
+        />
+
+        <input
+          placeholder="Categoria"
+          value={form.categoria}
+          onChange={e => setForm({ ...form, categoria: e.target.value })}
+        />
+
+        <input
+          type="date"
+          value={form.data}
+          onChange={e => setForm({ ...form, data: e.target.value })}
+        />
+
+        <div className="news-image-upload">
+          <label className="image-upload-label">
+            Foto da notícia
+            <input type="file" accept="image/*" onChange={chooseFile} />
+          </label>
+
+          {preview && (
+            <img
+              className="news-upload-preview"
+              src={preview}
+              alt="Prévia da notícia"
+            />
+          )}
+
+          {uploading && (
+            <div className="upload-progress">
+              <div style={{ width: `${progress}%` }} />
+              <span>{progress}%</span>
+            </div>
+          )}
+        </div>
+
+        <textarea
+          placeholder="Resumo que aparece no card"
+          value={form.resumo}
+          onChange={e => setForm({ ...form, resumo: e.target.value })}
+        />
+
+        <textarea
+          className="news-full-text-input"
+          placeholder="Texto completo da notícia"
+          value={form.conteudo}
+          onChange={e => setForm({ ...form, conteudo: e.target.value })}
+        />
+
+        {error && <div className="form-message error-message">{error}</div>}
+
+        <button className="btn btn-primary" disabled={uploading}>
+          <Plus size={16} />
+          {uploading ? 'Enviando imagem...' : 'Publicar notícia'}
+        </button>
       </form>
     }>
-      <AdminList collection="noticias" data={data} render={x => `${x.categoria || ''} · ${x.data || ''}`} />
+      <div className="admin-detailed-list">
+        {data.map(item => (
+          <div className="admin-detailed-row" key={item.id}>
+            <button
+              className="admin-detail-open news-admin-row"
+              onClick={() => setSelected(selected?.id === item.id ? null : item)}
+            >
+              {item.imagemUrl && (
+                <img src={item.imagemUrl} alt="" className="admin-news-thumb" />
+              )}
+              <div>
+                <strong>{item.titulo}</strong>
+                <span>{item.categoria || 'Mandato'} · {item.data || ''}</span>
+                <small>{selected?.id === item.id ? 'Ocultar detalhes' : 'Ver notícia completa'}</small>
+              </div>
+            </button>
+
+            <button
+              className="danger-button"
+              onClick={() => removeDocument('noticias', item.id)}
+            >
+              <Trash2 size={15} /> Excluir
+            </button>
+
+            {selected?.id === item.id && (
+              <div className="admin-detail-panel news-admin-detail">
+                {item.imagemUrl && (
+                  <img
+                    src={item.imagemUrl}
+                    alt={item.titulo}
+                    className="admin-news-detail-image"
+                  />
+                )}
+                <div><span>Categoria</span><strong>{item.categoria || 'Mandato'}</strong></div>
+                <div><span>Data</span><strong>{item.data || 'Não informada'}</strong></div>
+                <div className="detail-full"><span>Resumo</span><p>{item.resumo || 'Sem resumo.'}</p></div>
+                <div className="detail-full"><span>Texto completo</span><p className="preserve-lines">{item.conteudo || 'Sem texto completo.'}</p></div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {!data.length && <p>Nenhuma notícia publicada ainda.</p>}
+      </div>
     </CrudSection>
   )
 }
