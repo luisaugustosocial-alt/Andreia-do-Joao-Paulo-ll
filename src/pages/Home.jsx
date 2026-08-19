@@ -52,6 +52,7 @@ export default function Home() {
   const [sending, setSending] = useState(false)
   const [protocol, setProtocol] = useState('')
   const [formError, setFormError] = useState('')
+  const [selectedNews, setSelectedNews] = useState(null)
   const [trackingProtocol, setTrackingProtocol] = useState('')
   const [trackingResult, setTrackingResult] = useState(null)
   const [trackingError, setTrackingError] = useState('')
@@ -536,17 +537,85 @@ export default function Home() {
             </div>
             <div className="news-grid">
               {noticias.slice(0, 8).map(item => (
-                <article className="news-card" key={item.id}>
-                  <div className="news-image photo-placeholder"><span>IMAGEM</span></div>
+                <article
+                  className="news-card clickable-news"
+                  key={item.id}
+                  onClick={() => setSelectedNews(item)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') setSelectedNews(item)
+                  }}
+                >
+                  {item.imagemUrl ? (
+                    <img
+                      className="news-image-real"
+                      src={item.imagemUrl}
+                      alt={item.titulo}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="news-image photo-placeholder"><span>IMAGEM</span></div>
+                  )}
+
                   <div className="news-content">
-                    <div className="news-meta"><b>{item.categoria || 'MANDATO'}</b><span>{item.data || ''}</span></div>
+                    <div className="news-meta">
+                      <b>{item.categoria || 'MANDATO'}</b>
+                      <span>{item.data || ''}</span>
+                    </div>
                     <h3>{item.titulo}</h3>
                     <p>{item.resumo}</p>
+                    <span className="read-news">Ler notícia completa</span>
                   </div>
                 </article>
               ))}
+
               {!noticias.length && <p>Nenhuma notícia publicada ainda.</p>}
             </div>
+
+            {selectedNews && (
+              <div className="news-modal-backdrop" onClick={() => setSelectedNews(null)}>
+                <article
+                  className="news-modal"
+                  onClick={e => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                >
+                  <button
+                    className="news-modal-close"
+                    onClick={() => setSelectedNews(null)}
+                    aria-label="Fechar notícia"
+                  >
+                    ×
+                  </button>
+
+                  {selectedNews.imagemUrl && (
+                    <img
+                      className="news-modal-image"
+                      src={selectedNews.imagemUrl}
+                      alt={selectedNews.titulo}
+                    />
+                  )}
+
+                  <div className="news-modal-body">
+                    <div className="news-meta">
+                      <b>{selectedNews.categoria || 'MANDATO'}</b>
+                      <span>{selectedNews.data || ''}</span>
+                    </div>
+
+                    <h2>{selectedNews.titulo}</h2>
+
+                    {selectedNews.resumo && (
+                      <p className="news-modal-lead">{selectedNews.resumo}</p>
+                    )}
+
+                    <div className="news-modal-text preserve-lines">
+                      {selectedNews.conteudo || selectedNews.resumo || ''}
+                    </div>
+                  </div>
+                </article>
+              </div>
+            )}
           </div>
         </section>
       </main>
