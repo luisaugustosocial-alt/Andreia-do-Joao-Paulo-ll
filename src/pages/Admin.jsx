@@ -573,7 +573,7 @@ function Agenda({ data }) {
 }
 
 function Noticias({ data }) {
-  const [form, setForm] = useState({
+  const emptyForm = {
     titulo: '',
     categoria: 'Mandato',
     data: '',
@@ -581,13 +581,30 @@ function Noticias({ data }) {
     conteudo: '',
     imagemUrl: '',
     imagemFileId: ''
-  })
+  }
+
+  const [form, setForm] = useState(emptyForm)
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState('')
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [selected, setSelected] = useState(null)
+  const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  function resetForm() {
+    if (preview && preview.startsWith('blob:')) {
+      URL.revokeObjectURL(preview)
+    }
+
+    setForm(emptyForm)
+    setFile(null)
+    setPreview('')
+    setProgress(0)
+    setEditingId(null)
+    setError('')
+  }
 
   function chooseFile(event) {
     const selectedFile = event.target.files?.[0]
@@ -603,9 +620,12 @@ function Noticias({ data }) {
       return
     }
 
+    if (preview && preview.startsWith('blob:')) {
+      URL.revokeObjectURL(preview)
+    }
+
     setError('')
     setFile(selectedFile)
-    if (preview) URL.revokeObjectURL(preview)
     setPreview(URL.createObjectURL(selectedFile))
   }
 
@@ -645,16 +665,39 @@ function Noticias({ data }) {
     })
   }
 
+  function startEdit(item) {
+    resetForm()
+
+    setEditingId(item.id)
+    setForm({
+      titulo: item.titulo || '',
+      categoria: item.categoria || 'Mandato',
+      data: item.data || '',
+      resumo: item.resumo || '',
+      conteudo: item.conteudo || '',
+      imagemUrl: item.imagemUrl || '',
+      imagemFileId: item.imagemFileId || ''
+    })
+    setPreview(item.imagemUrl || '')
+    setSuccess('')
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
   async function submit(e) {
     e.preventDefault()
     setError('')
+    setSuccess('')
 
     if (!form.titulo || !form.data || !form.resumo || !form.conteudo) {
       setError('Preencha título, data, resumo e texto completo.')
       return
     }
 
-    if (!file) {
+    if (!file && !form.imagemUrl) {
       setError('Escolha uma foto para a notícia.')
       return
     }
@@ -663,104 +706,172 @@ function Noticias({ data }) {
     setProgress(0)
 
     try {
-      const uploaded = await uploadImage()
+      let imageData = {
+        imagemUrl: form.imagemUrl,
+        imagemFileId: form.imagemFileId
+      }
 
-      await createDocument('noticias', {
+      if (file) {
+        const uploaded = await uploadImage()
+
+        imageData = {
+          imagemUrl: uploaded.url,
+          imagemFileId: uploaded.fileId || ''
+        }
+      }
+
+      const noticiaData = {
         titulo: form.titulo,
         categoria: form.categoria,
         data: form.data,
         resumo: form.resumo,
         conteudo: form.conteudo,
-        imagemUrl: uploaded.url,
-        imagemFileId: uploaded.fileId || ''
-      })
+        ...imageData
+      }
 
-      if (preview) URL.revokeObjectURL(preview)
+      if (editingId) {
+        await updateDocument('noticias', editingId, noticiaData)
+        setSuccess('Notícia atualizada com sucesso.')
+      } else {
+        await createDocument('noticias', noticiaData)
+        setSuccess('Notícia publicada com sucesso.')
+      }
 
-      setForm({
-        titulo: '',
-        categoria: 'Mandato',
-        data: '',
-        resumo: '',
-        conteudo: '',
-        imagemUrl: '',
-        imagemFileId: ''
-      })
-      setFile(null)
-      setPreview('')
-      setProgress(0)
+      resetForm()
     } catch (err) {
       console.error(err)
-      setError('Não foi possível publicar a notícia. Verifique a imagem e tente novamente.')
+      setError(
+        editingId
+          ? 'Não foi possível atualizar a notícia. Tente novamente.'
+          : 'Não foi possível publicar a notícia. Verifique a imagem e tente novamente.'
+      )
     } finally {
       setUploading(false)
     }
   }
 
+  async function deleteNews(item) {
+    const confirmed = window.confirm(
+      `Excluir a notícia "${item.titulo}"? Essa ação não poderá ser desfeita.`
+    )
+
+    if (!confirmed) return
+
+    await removeDocument('noticias', item.id)
+
+    if (selected?.id === item.id) {
+      setSelected(null)
+    }
+
+    if (editingId === item.id) {
+      resetForm()
+    }
+  }
+
   return (
-    <CrudSection title="Notícias" form={
-      <form className="admin-form news-admin-form" onSubmit={submit}>
-        <input
-          placeholder="Título"
-          value={form.titulo}
-          onChange={e => setForm({ ...form, titulo: e.target.value })}
-        />
+    <CrudSection
+      title={editingId ? 'Editar notícia' : 'Notícias'}
+      form={
+        <form className="admin-form news-admin-form" onSubmit={submit}>
+          {editingId && (
+            <div className="edit-mode-banner">
+              <div>
+                <strong>Editando notícia publicada</strong>
+                <span>Altere os campos abaixo e clique em “Salvar alterações”.</span>
+              </div>
 
-        <input
-          placeholder="Categoria"
-          value={form.categoria}
-          onChange={e => setForm({ ...form, categoria: e.target.value })}
-        />
-
-        <input
-          type="date"
-          value={form.data}
-          onChange={e => setForm({ ...form, data: e.target.value })}
-        />
-
-        <div className="news-image-upload">
-          <label className="image-upload-label">
-            Foto da notícia
-            <input type="file" accept="image/*" onChange={chooseFile} />
-          </label>
-
-          {preview && (
-            <img
-              className="news-upload-preview"
-              src={preview}
-              alt="Prévia da notícia"
-            />
-          )}
-
-          {uploading && (
-            <div className="upload-progress">
-              <div style={{ width: `${progress}%` }} />
-              <span>{progress}%</span>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={resetForm}
+              >
+                Cancelar edição
+              </button>
             </div>
           )}
-        </div>
 
-        <textarea
-          placeholder="Resumo que aparece no card"
-          value={form.resumo}
-          onChange={e => setForm({ ...form, resumo: e.target.value })}
-        />
+          <input
+            placeholder="Título"
+            value={form.titulo}
+            onChange={e => setForm({ ...form, titulo: e.target.value })}
+          />
 
-        <textarea
-          className="news-full-text-input"
-          placeholder="Texto completo da notícia"
-          value={form.conteudo}
-          onChange={e => setForm({ ...form, conteudo: e.target.value })}
-        />
+          <input
+            placeholder="Categoria"
+            value={form.categoria}
+            onChange={e => setForm({ ...form, categoria: e.target.value })}
+          />
 
-        {error && <div className="form-message error-message">{error}</div>}
+          <input
+            type="date"
+            value={form.data}
+            onChange={e => setForm({ ...form, data: e.target.value })}
+          />
 
-        <button className="btn btn-primary" disabled={uploading}>
-          <Plus size={16} />
-          {uploading ? 'Enviando imagem...' : 'Publicar notícia'}
-        </button>
-      </form>
-    }>
+          <div className="news-image-upload">
+            <label className="image-upload-label">
+              {editingId ? 'Trocar foto da notícia (opcional)' : 'Foto da notícia'}
+              <input type="file" accept="image/*" onChange={chooseFile} />
+            </label>
+
+            {preview && (
+              <div className="news-current-image">
+                <span>{file ? 'Nova imagem selecionada' : 'Imagem atual'}</span>
+                <img
+                  className="news-upload-preview"
+                  src={preview}
+                  alt="Prévia da notícia"
+                />
+              </div>
+            )}
+
+            {uploading && file && (
+              <div className="upload-progress">
+                <div style={{ width: `${progress}%` }} />
+                <span>{progress}%</span>
+              </div>
+            )}
+          </div>
+
+          <textarea
+            placeholder="Resumo que aparece no card"
+            value={form.resumo}
+            onChange={e => setForm({ ...form, resumo: e.target.value })}
+          />
+
+          <textarea
+            className="news-full-text-input"
+            placeholder="Texto completo da notícia"
+            value={form.conteudo}
+            onChange={e => setForm({ ...form, conteudo: e.target.value })}
+          />
+
+          {error && (
+            <div className="form-message error-message">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="form-message success-message">
+              {success}
+            </div>
+          )}
+
+          <button
+            className="btn btn-primary"
+            disabled={uploading}
+          >
+            <Plus size={16} />
+            {uploading
+              ? 'Salvando...'
+              : editingId
+                ? 'Salvar alterações'
+                : 'Publicar notícia'}
+          </button>
+        </form>
+      }
+    >
       <div className="admin-detailed-list">
         {data.map(item => (
           <div className="admin-detailed-row" key={item.id}>
@@ -769,21 +880,42 @@ function Noticias({ data }) {
               onClick={() => setSelected(selected?.id === item.id ? null : item)}
             >
               {item.imagemUrl && (
-                <img src={item.imagemUrl} alt="" className="admin-news-thumb" />
+                <img
+                  src={item.imagemUrl}
+                  alt=""
+                  className="admin-news-thumb"
+                />
               )}
+
               <div>
                 <strong>{item.titulo}</strong>
-                <span>{item.categoria || 'Mandato'} · {item.data || ''}</span>
-                <small>{selected?.id === item.id ? 'Ocultar detalhes' : 'Ver notícia completa'}</small>
+                <span>
+                  {item.categoria || 'Mandato'} · {item.data || ''}
+                </span>
+                <small>
+                  {selected?.id === item.id
+                    ? 'Ocultar detalhes'
+                    : 'Ver notícia completa'}
+                </small>
               </div>
             </button>
 
-            <button
-              className="danger-button"
-              onClick={() => removeDocument('noticias', item.id)}
-            >
-              <Trash2 size={15} /> Excluir
-            </button>
+            <div className="news-admin-actions">
+              <button
+                className="edit-news-button"
+                onClick={() => startEdit(item)}
+              >
+                Editar
+              </button>
+
+              <button
+                className="danger-button"
+                onClick={() => deleteNews(item)}
+              >
+                <Trash2 size={15} />
+                Excluir
+              </button>
+            </div>
 
             {selected?.id === item.id && (
               <div className="admin-detail-panel news-admin-detail">
@@ -794,16 +926,36 @@ function Noticias({ data }) {
                     className="admin-news-detail-image"
                   />
                 )}
-                <div><span>Categoria</span><strong>{item.categoria || 'Mandato'}</strong></div>
-                <div><span>Data</span><strong>{item.data || 'Não informada'}</strong></div>
-                <div className="detail-full"><span>Resumo</span><p>{item.resumo || 'Sem resumo.'}</p></div>
-                <div className="detail-full"><span>Texto completo</span><p className="preserve-lines">{item.conteudo || 'Sem texto completo.'}</p></div>
+
+                <div>
+                  <span>Categoria</span>
+                  <strong>{item.categoria || 'Mandato'}</strong>
+                </div>
+
+                <div>
+                  <span>Data</span>
+                  <strong>{item.data || 'Não informada'}</strong>
+                </div>
+
+                <div className="detail-full">
+                  <span>Resumo</span>
+                  <p>{item.resumo || 'Sem resumo.'}</p>
+                </div>
+
+                <div className="detail-full">
+                  <span>Texto completo</span>
+                  <p className="preserve-lines">
+                    {item.conteudo || 'Sem texto completo.'}
+                  </p>
+                </div>
               </div>
             )}
           </div>
         ))}
 
-        {!data.length && <p>Nenhuma notícia publicada ainda.</p>}
+        {!data.length && (
+          <p>Nenhuma notícia publicada ainda.</p>
+        )}
       </div>
     </CrudSection>
   )
