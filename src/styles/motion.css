@@ -112,11 +112,153 @@
   transform:scale(.95);
 }
 
+/* CORREÇÃO GERAL DOS POP-UPS / LIQUID GLASS */
+.liquid-modal-backdrop,
+.news-modal-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100vh!important;
+  z-index:9998!important;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom))!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:rgba(25,13,39,.58)!important;
+  backdrop-filter:blur(22px) saturate(145%)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(145%)!important;
+  overscroll-behavior:contain!important;
+}
+
+.liquid-modal-card,
+.news-modal,
+.public-detail-panel,
+.tracking-result{
+  background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(247,240,255,.82))!important;
+  border:1px solid rgba(255,255,255,.9)!important;
+  box-shadow:0 28px 80px rgba(22,10,38,.34),0 8px 28px rgba(84,33,166,.14),inset 0 1px 0 rgba(255,255,255,.98)!important;
+  backdrop-filter:blur(32px) saturate(175%)!important;
+  -webkit-backdrop-filter:blur(32px) saturate(175%)!important;
+}
+
+.news-modal{
+  width:min(900px,calc(100vw - 28px))!important;
+  max-height:calc(100dvh - 28px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  margin:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+  scrollbar-width:thin;
+  overscroll-behavior:contain!important;
+}
+
+.news-modal-image{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:46dvh!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  background:rgba(255,255,255,.45)!important;
+}
+
+.liquid-modal-card{
+  max-height:calc(100dvh - 28px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+}
+
+.public-detail-panel,
+.tracking-result{
+  z-index:9999!important;
+  max-height:calc(100dvh - 28px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  box-shadow:0 0 0 100vmax rgba(25,13,39,.58),0 28px 80px rgba(22,10,38,.34),0 8px 28px rgba(84,33,166,.14),inset 0 1px 0 rgba(255,255,255,.98)!important;
+}
+
 @media (max-width:640px){
   .motion-reveal{
     transform:translateY(18px) scale(.99);
     transition-duration:.52s;
   }
+
+  .liquid-modal-backdrop,
+  .news-modal-backdrop{
+    padding:max(10px,env(safe-area-inset-top)) 9px max(10px,env(safe-area-inset-bottom))!important;
+    place-items:center!important;
+    background:rgba(24,12,37,.64)!important;
+    backdrop-filter:blur(24px) saturate(150%)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(150%)!important;
+  }
+
+  .liquid-modal-card,
+  .news-modal{
+    width:calc(100vw - 18px)!important;
+    max-width:calc(100vw - 18px)!important;
+    max-height:calc(100dvh - 20px)!important;
+    margin:0!important;
+    border-radius:26px!important;
+  }
+
+  .news-modal{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+
+  .news-modal-image{
+    width:100%!important;
+    height:auto!important;
+    max-height:40dvh!important;
+    min-height:0!important;
+    object-fit:contain!important;
+    object-position:center!important;
+    flex:0 0 auto!important;
+  }
+
+  .news-modal-body{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+
+  .public-detail-panel,
+  .tracking-result{
+    left:50%!important;
+    top:50%!important;
+    bottom:auto!important;
+    width:calc(100vw - 18px)!important;
+    max-width:calc(100vw - 18px)!important;
+    max-height:calc(100dvh - 20px)!important;
+    margin:0!important;
+    transform:translate(-50%,-50%)!important;
+    border-radius:26px!important;
+  }
+
+  /* No mobile a animação preserva SEMPRE a centralização */
+  .public-detail-panel,
+  .tracking-result{
+    animation:motionFixedPopInMobile .3s cubic-bezier(.2,.9,.25,1.12) both!important;
+  }
+
+  .tracking-result.motion-closing,
+  .public-detail-panel.motion-closing{
+    animation:motionFixedPopOutMobile .18s ease both!important;
+  }
+}
+
+@keyframes motionFixedPopInMobile{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.9)}
+  70%{opacity:1;transform:translate(-50%,-50%) scale(1.015)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+
+@keyframes motionFixedPopOutMobile{
+  from{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  to{opacity:0;transform:translate(-50%,-50%) scale(.94)}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -134,7 +276,11 @@
     animation:none!important;
     transition:none!important;
     opacity:1!important;
-    transform:none;
+  }
+
+  .motion-reveal,
+  .motion-reveal.motion-visible{
+    transform:none!important;
   }
 
   .public-detail-panel,
