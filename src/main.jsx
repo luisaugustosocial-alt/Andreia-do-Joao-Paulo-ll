@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './styles/global.css'
 import './styles/overrides.css'
+import './utils/date-dom'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
