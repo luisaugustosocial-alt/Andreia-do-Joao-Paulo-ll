@@ -68,3 +68,221 @@ patch('src/pages/Admin.jsx', admin => {
   }
   return admin
 })
+
+patch('src/pages/Admin.jsx', admin => {
+  const agendaStart = admin.indexOf('function Agenda({ data }) {')
+  const agendaEnd = admin.indexOf('function Noticias({ data }) {', agendaStart)
+  if (agendaStart !== -1 && agendaEnd !== -1) {
+    const agendaReplacement = `function Agenda({ data }) {
+  const emptyForm = { titulo:'', data:'', horario:'', local:'', descricao:'' }
+  const [form, setForm] = useState(emptyForm)
+  const [selected, setSelected] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [message, setMessage] = useState('')
+
+  function resetForm() {
+    setForm(emptyForm)
+    setEditingId(null)
+  }
+
+  function startEdit(item) {
+    setEditingId(item.id)
+    setForm({
+      titulo: item.titulo || '',
+      data: item.data || '',
+      horario: item.horario || '',
+      local: item.local || '',
+      descricao: item.descricao || ''
+    })
+    setMessage('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!form.titulo || !form.data) return
+    if (editingId) {
+      await updateDocument('agenda', editingId, form)
+      setMessage('Compromisso atualizado com sucesso.')
+    } else {
+      await createDocument('agenda', form)
+      setMessage('Compromisso adicionado com sucesso.')
+    }
+    resetForm()
+  }
+
+  async function deleteItem(item) {
+    if (!window.confirm('Excluir este compromisso?')) return
+    await removeDocument('agenda', item.id)
+    if (editingId === item.id) resetForm()
+    if (selected?.id === item.id) setSelected(null)
+  }
+
+  return (
+    <CrudSection title={editingId ? 'Editar compromisso da agenda' : 'Agenda do mandato'} form={
+      <form className="admin-form" onSubmit={submit}>
+        {editingId && (
+          <div className="edit-mode-banner">
+            <div><strong>Editando compromisso publicado</strong><span>Altere os dados e salve.</span></div>
+            <button type="button" className="btn btn-outline" onClick={resetForm}>Cancelar edição</button>
+          </div>
+        )}
+        <input placeholder="Título" value={form.titulo} onChange={e=>setForm({...form,titulo:e.target.value})}/>
+        <input type="date" value={form.data} onChange={e=>setForm({...form,data:e.target.value})}/>
+        <input type="time" value={form.horario} onChange={e=>setForm({...form,horario:e.target.value})}/>
+        <input placeholder="Local" value={form.local} onChange={e=>setForm({...form,local:e.target.value})}/>
+        <textarea placeholder="Descrição detalhada do compromisso" value={form.descricao} onChange={e=>setForm({...form,descricao:e.target.value})}/>
+        <button className="btn btn-primary"><Check size={16}/>{editingId ? 'Salvar alterações' : 'Adicionar compromisso'}</button>
+        {message && <div className="form-message success-message">{message}</div>}
+      </form>
+    }>
+      <div className="admin-detailed-list">
+        {data.map(item => (
+          <div className="admin-detailed-row" key={item.id}>
+            <button className="admin-detail-open" onClick={() => setSelected(selected?.id === item.id ? null : item)}>
+              <strong>{item.titulo}</strong>
+              <span>{item.data || ''} · {item.horario || ''} · {item.local || ''}</span>
+              <small>{selected?.id === item.id ? 'Ocultar detalhes' : 'Ver detalhes'}</small>
+            </button>
+            <div className="news-admin-actions">
+              <button className="edit-news-button" type="button" onClick={() => startEdit(item)}>Editar</button>
+              <button className="danger-button" type="button" onClick={() => deleteItem(item)}><Trash2 size={15}/> Excluir</button>
+            </div>
+            {selected?.id === item.id && (
+              <div className="admin-detail-panel">
+                <div><span>Data</span><strong>{item.data || 'Não informada'}</strong></div>
+                <div><span>Horário</span><strong>{item.horario || 'Não informado'}</strong></div>
+                <div><span>Local</span><strong>{item.local || 'Não informado'}</strong></div>
+                <div className="detail-full"><span>Descrição</span><p>{item.descricao || 'Nenhuma descrição cadastrada.'}</p></div>
+              </div>
+            )}
+          </div>
+        ))}
+        {!data.length && <p>Nenhum compromisso cadastrado.</p>}
+      </div>
+    </CrudSection>
+  )
+}
+
+`
+    admin = admin.slice(0, agendaStart) + agendaReplacement + admin.slice(agendaEnd)
+  }
+
+  const transparenciaStart = admin.indexOf('function Transparencia({ sessoes, acoes }) {')
+  const transparenciaEnd = admin.indexOf('function CrudSection({ title, form, children }) {', transparenciaStart)
+  if (transparenciaStart !== -1 && transparenciaEnd !== -1) {
+    const transparenciaReplacement = `function Transparencia({ sessoes, acoes }) {
+  const emptySessao = { data:'', tipo:'Sessão Ordinária', status:'Presente', justificativa:'' }
+  const emptyAcao = { titulo:'', bairro:'', data:'' }
+  const [sessao, setSessao] = useState(emptySessao)
+  const [acao, setAcao] = useState(emptyAcao)
+  const [editingSessaoId, setEditingSessaoId] = useState(null)
+  const [editingAcaoId, setEditingAcaoId] = useState(null)
+
+  function editSessao(item) {
+    setEditingSessaoId(item.id)
+    setSessao({
+      data: item.data || '',
+      tipo: item.tipo || 'Sessão Ordinária',
+      status: item.status || 'Presente',
+      justificativa: item.justificativa || ''
+    })
+  }
+
+  function editAcao(item) {
+    setEditingAcaoId(item.id)
+    setAcao({ titulo:item.titulo || '', bairro:item.bairro || '', data:item.data || '' })
+  }
+
+  async function saveSessao(e) {
+    e.preventDefault()
+    if (!sessao.data) return
+    if (editingSessaoId) await updateDocument('sessoes', editingSessaoId, sessao)
+    else await createDocument('sessoes', sessao)
+    setSessao(emptySessao)
+    setEditingSessaoId(null)
+  }
+
+  async function saveAcao(e) {
+    e.preventDefault()
+    if (!acao.titulo || !acao.bairro) return
+    if (editingAcaoId) await updateDocument('acoes', editingAcaoId, acao)
+    else await createDocument('acoes', acao)
+    setAcao(emptyAcao)
+    setEditingAcaoId(null)
+  }
+
+  const presentes = sessoes.filter(x => x.status === 'Presente').length
+  const percentual = sessoes.length ? Math.round((presentes / sessoes.length) * 100) : 0
+
+  return (
+    <>
+      <div className="admin-cards">
+        <div className="admin-stat"><strong>{sessoes.length}</strong><span>Sessões cadastradas</span></div>
+        <div className="admin-stat"><strong>{presentes}</strong><span>Presenças</span></div>
+        <div className="admin-stat"><strong>{percentual}%</strong><span>Presença automática</span></div>
+        <div className="admin-stat"><strong>{new Set(acoes.map(x=>x.bairro).filter(Boolean)).size}</strong><span>Comunidades visitadas</span></div>
+      </div>
+
+      <div className="admin-grid">
+        <section className="admin-panel">
+          <div className="panel-head"><h2>{editingSessaoId ? 'Editar sessão' : 'Registrar sessão'}</h2></div>
+          <form className="admin-form" onSubmit={saveSessao}>
+            {editingSessaoId && <button type="button" className="btn btn-outline" onClick={() => { setEditingSessaoId(null); setSessao(emptySessao) }}>Cancelar edição</button>}
+            <input type="date" value={sessao.data} onChange={e=>setSessao({...sessao,data:e.target.value})}/>
+            <select value={sessao.tipo} onChange={e=>setSessao({...sessao,tipo:e.target.value})}>
+              <option>Sessão Ordinária</option><option>Sessão Extraordinária</option><option>Sessão Solene</option>
+            </select>
+            <select value={sessao.status} onChange={e=>setSessao({...sessao,status:e.target.value})}>
+              <option>Presente</option><option>Ausente</option><option>Ausência justificada</option>
+            </select>
+            <input placeholder="Justificativa, se houver" value={sessao.justificativa} onChange={e=>setSessao({...sessao,justificativa:e.target.value})}/>
+            <button className="btn btn-primary"><Check size={16}/>{editingSessaoId ? 'Salvar alterações' : 'Salvar sessão'}</button>
+          </form>
+          <div className="edit-list">
+            {sessoes.map(item => (
+              <div key={item.id}>
+                <div><strong>{item.tipo || 'Sessão'}</strong><span>{item.data} · {item.status}{item.justificativa ? ' · ' + item.justificativa : ''}</span></div>
+                <div>
+                  <button type="button" onClick={() => editSessao(item)}>Editar</button>
+                  <button className="danger-button" type="button" onClick={() => removeDocument('sessoes', item.id)}><Trash2 size={15}/> Excluir</button>
+                </div>
+              </div>
+            ))}
+            {!sessoes.length && <p>Nenhuma sessão cadastrada.</p>}
+          </div>
+        </section>
+
+        <section className="admin-panel">
+          <div className="panel-head"><h2>{editingAcaoId ? 'Editar ação/comunidade' : 'Registrar ação/comunidade'}</h2></div>
+          <form className="admin-form" onSubmit={saveAcao}>
+            {editingAcaoId && <button type="button" className="btn btn-outline" onClick={() => { setEditingAcaoId(null); setAcao(emptyAcao) }}>Cancelar edição</button>}
+            <input placeholder="Ação realizada" value={acao.titulo} onChange={e=>setAcao({...acao,titulo:e.target.value})}/>
+            <input placeholder="Bairro / Comunidade" value={acao.bairro} onChange={e=>setAcao({...acao,bairro:e.target.value})}/>
+            <input type="date" value={acao.data} onChange={e=>setAcao({...acao,data:e.target.value})}/>
+            <button className="btn btn-primary"><Check size={16}/>{editingAcaoId ? 'Salvar alterações' : 'Registrar ação'}</button>
+          </form>
+          <div className="edit-list">
+            {acoes.map(item => (
+              <div key={item.id}>
+                <div><strong>{item.titulo || 'Ação'}</strong><span>{item.bairro} · {item.data || ''}</span></div>
+                <div>
+                  <button type="button" onClick={() => editAcao(item)}>Editar</button>
+                  <button className="danger-button" type="button" onClick={() => removeDocument('acoes', item.id)}><Trash2 size={15}/> Excluir</button>
+                </div>
+              </div>
+            ))}
+            {!acoes.length && <p>Nenhuma ação cadastrada.</p>}
+          </div>
+        </section>
+      </div>
+    </>
+  )
+}
+
+`
+    admin = admin.slice(0, transparenciaStart) + transparenciaReplacement + admin.slice(transparenciaEnd)
+  }
+
+  return admin
+})
