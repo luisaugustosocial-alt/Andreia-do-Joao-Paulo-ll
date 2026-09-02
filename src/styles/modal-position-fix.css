@@ -1,0 +1,113 @@
+/* Correção definitiva: elementos revelados não podem manter transform ativo,
+   pois isso muda o referencial de descendentes position: fixed. */
+.motion-reveal.motion-visible,
+.hero-image.motion-visible,
+.news-card.motion-visible,
+.office-card.motion-visible,
+.stat-card.motion-visible {
+  transform: none !important;
+  will-change: auto !important;
+}
+
+/* Overlays sempre pertencem visualmente à viewport. */
+.liquid-modal-backdrop,
+.news-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  z-index: 2147483000 !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+  overflow: hidden !important;
+  background: rgba(24, 12, 38, .62) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+}
+
+.liquid-modal-card,
+.news-modal {
+  position: relative !important;
+  margin: 0 !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+/* Agenda, proposições e acompanhamento usam painel fixo sem wrapper próprio. */
+.public-detail-panel,
+.tracking-result {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(820px, calc(100vw - 24px)) !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow-y: auto !important;
+  margin: 0 !important;
+  z-index: 2147483001 !important;
+  overscroll-behavior: contain !important;
+  box-shadow:
+    0 0 0 100vmax rgba(24, 12, 38, .62),
+    0 28px 80px rgba(22, 10, 38, .34),
+    inset 0 1px 0 rgba(255,255,255,.98) !important;
+}
+
+/* Mantém a centralização também durante a animação. */
+.public-detail-panel,
+.tracking-result {
+  animation-name: modalViewportIn !important;
+  animation-duration: .30s !important;
+  animation-timing-function: cubic-bezier(.2,.9,.25,1.12) !important;
+  animation-fill-mode: both !important;
+}
+
+.public-detail-panel.motion-closing,
+.tracking-result.motion-closing {
+  animation: modalViewportOut .18s ease both !important;
+}
+
+@keyframes modalViewportIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.92); }
+  72% { opacity: 1; transform: translate(-50%, -50%) scale(1.012); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes modalViewportOut {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(.95); }
+}
+
+.news-modal-image {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 42dvh !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+@media (max-width: 640px) {
+  .liquid-modal-card,
+  .news-modal,
+  .public-detail-panel,
+  .tracking-result {
+    width: calc(100vw - 18px) !important;
+    max-width: calc(100vw - 18px) !important;
+    max-height: calc(100dvh - 18px) !important;
+    border-radius: 26px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-detail-panel,
+  .tracking-result {
+    animation: none !important;
+    transform: translate(-50%, -50%) !important;
+  }
+}
