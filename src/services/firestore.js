@@ -45,19 +45,33 @@ export async function removeDocument(name, id) {
   return deleteDoc(doc(db, name, id))
 }
 
+function normalizeProtocol(protocol) {
+  const value = String(protocol || '').trim().toUpperCase()
+  const long = value.match(/^AND-(\d{4})-(\d{6})$/)
+  if (long) return `AND-${long[1]}-${long[2].slice(-3)}`
+  return value
+}
+
 export async function createDemandWithTracking(privateData, publicData, protocol) {
+  const shortProtocol = normalizeProtocol(protocol)
+
+  const existing = await getDoc(doc(db, 'demandas', shortProtocol))
+  if (existing.exists()) {
+    throw new Error('Protocolo já existente. Envie novamente para gerar outro número.')
+  }
+
   const batch = writeBatch(db)
 
-  batch.set(doc(db, 'demandas', protocol), {
+  batch.set(doc(db, 'demandas', shortProtocol), {
     ...privateData,
-    protocolo: protocol,
+    protocolo: shortProtocol,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   })
 
-  batch.set(doc(db, 'acompanhamentos', protocol), {
+  batch.set(doc(db, 'acompanhamentos', shortProtocol), {
     ...publicData,
-    protocolo: protocol,
+    protocolo: shortProtocol,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   })
@@ -66,18 +80,19 @@ export async function createDemandWithTracking(privateData, publicData, protocol
 }
 
 export async function updateDemandAndTracking(protocol, privateUpdates, publicUpdates) {
+  const shortProtocol = normalizeProtocol(protocol)
   const batch = writeBatch(db)
 
-  batch.update(doc(db, 'demandas', protocol), {
+  batch.update(doc(db, 'demandas', shortProtocol), {
     ...privateUpdates,
     updatedAt: serverTimestamp()
   })
 
   batch.set(
-    doc(db, 'acompanhamentos', protocol),
+    doc(db, 'acompanhamentos', shortProtocol),
     {
       ...publicUpdates,
-      protocolo: protocol,
+      protocolo: shortProtocol,
       updatedAt: serverTimestamp()
     },
     { merge: true }
@@ -87,7 +102,8 @@ export async function updateDemandAndTracking(protocol, privateUpdates, publicUp
 }
 
 export async function getTrackingByProtocol(protocol) {
-  const snap = await getDoc(doc(db, 'acompanhamentos', protocol))
+  const shortProtocol = normalizeProtocol(protocol)
+  const snap = await getDoc(doc(db, 'acompanhamentos', shortProtocol))
   if (!snap.exists()) return null
   return { id: snap.id, ...snap.data() }
 }
