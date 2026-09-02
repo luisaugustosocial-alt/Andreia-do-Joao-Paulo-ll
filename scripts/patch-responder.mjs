@@ -33,10 +33,10 @@ patch('src/pages/Home.jsx', home => {
   home = home.replaceAll('trackingResult.servidorResponsavel && (', 'trackingResponderName && (')
   home = home.replaceAll('{trackingResult.servidorResponsavel}</strong>', '{trackingResponderName}</strong>')
 
-  if (!home.includes('tracking-responder-fallback')) {
+  if (!home.includes('tracking-responder-fallback') && !home.includes('<span>Respondido por</span>')) {
     home = home.replace(
       "                  <div className=\"tracking-subject\">\n                    <span>Assunto</span>",
-      `                  {trackingResponderName && !home?.includes && null}\n                  <div className=\"tracking-subject tracking-responder-fallback\" style={{display: trackingResponderName ? 'block' : 'none'}}>\n                    <span>Respondido por</span>\n                    <strong>{trackingResponderName}</strong>\n                  </div>\n\n                  <div className=\"tracking-subject\">\n                    <span>Assunto</span>`
+      `                  {trackingResponderName && (\n                    <div className=\"tracking-subject tracking-responder-fallback\">\n                      <span>Respondido por</span>\n                      <strong>{trackingResponderName}</strong>\n                    </div>\n                  )}\n\n                  <div className=\"tracking-subject\">\n                    <span>Assunto</span>`
     )
   }
 
