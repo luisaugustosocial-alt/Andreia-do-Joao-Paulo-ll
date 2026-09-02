@@ -1,0 +1,7 @@
+.hero-shape{display:none!important}
+.hero-photo{background:transparent!important}
+.andreia-hero-image{object-fit:contain!important;object-position:center bottom!important;background:transparent!important}
+.news-image-real,.news-modal-image,.admin-news-detail-image,.news-upload-preview{object-fit:contain!important;background:#f7f4fa}
+.news-image-real{height:240px!important}
+.legal-page{padding:70px 0;background:#fff}.legal-card{max-width:900px;margin:0 auto}.legal-card h1{font-size:42px;color:var(--purple-dark);margin:8px 0 24px}.legal-card h2{font-size:22px;color:var(--purple-dark);margin-top:32px}.legal-card p,.legal-card li{line-height:1.8;color:#534b5e}.footer-legal{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11px;font-weight:700}
+@media(max-width:640px){.andreia-hero-image{min-height:380px!important}.news-image-real{height:220px!important}.legal-card h1{font-size:32px}}
