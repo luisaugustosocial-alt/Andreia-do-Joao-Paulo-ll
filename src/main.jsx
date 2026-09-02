@@ -6,6 +6,7 @@ import './styles/global.css'
 import './styles/overrides.css'
 import './styles/admin.css'
 import './utils/date-dom'
+import './utils/motion'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
