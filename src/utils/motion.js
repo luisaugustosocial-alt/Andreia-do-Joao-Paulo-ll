@@ -2,7 +2,6 @@ const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduc
 
 if (!prefersReducedMotion) {
   const revealSelector = [
-    'main > section',
     '.section-heading',
     '.about-grid > *',
     '.stats-grid > *',
@@ -14,8 +13,16 @@ if (!prefersReducedMotion) {
     '.action-grid > *',
     '.hero-content > *',
     '.hero-image',
-    '.tracking-box',
     '.legal-card'
+  ].join(',')
+
+  const overlaySelector = [
+    '.liquid-modal-backdrop',
+    '.news-modal-backdrop',
+    '.liquid-modal-card',
+    '.news-modal',
+    '.public-detail-panel',
+    '.tracking-result'
   ].join(',')
 
   const observed = new WeakSet()
@@ -39,6 +46,8 @@ if (!prefersReducedMotion) {
 
     elements.forEach((element, index) => {
       if (observed.has(element)) return
+      if (element.matches?.(overlaySelector) || element.closest?.(overlaySelector)) return
+
       observed.add(element)
       element.classList.add('motion-reveal')
       element.style.setProperty('--motion-delay', `${Math.min((index % 6) * 55, 275)}ms`)
@@ -64,7 +73,7 @@ if (!prefersReducedMotion) {
 
   // Anima a saída dos pop-ups antes de o React removê-los da tela.
   const bypassOnce = new WeakSet()
-  const closeButtonSelector = '.news-modal-close, .liquid-modal-close'
+  const closeButtonSelector = '.news-modal-close, .liquid-modal-close, .public-detail-head button'
   const backdropSelector = '.news-modal-backdrop, .liquid-modal-backdrop'
 
   document.addEventListener('click', event => {
@@ -81,7 +90,7 @@ if (!prefersReducedMotion) {
     if (!closeButton && !backdrop) return
 
     const animatedRoot = closeButton
-      ? closeButton.closest('.news-modal-backdrop, .liquid-modal-backdrop, .tracking-result')
+      ? closeButton.closest('.news-modal-backdrop, .liquid-modal-backdrop, .tracking-result, .public-detail-panel')
       : backdrop
 
     if (!animatedRoot || animatedRoot.classList.contains('motion-closing')) return
