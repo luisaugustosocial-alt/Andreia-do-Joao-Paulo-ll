@@ -5,6 +5,7 @@ import AdminLogin from './pages/AdminLogin'
 import ProtectedRoute from './components/ProtectedRoute'
 import PoliticaPrivacidade from './pages/PoliticaPrivacidade'
 import TermosUso from './pages/TermosUso'
+import NotFound from './pages/NotFound'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
