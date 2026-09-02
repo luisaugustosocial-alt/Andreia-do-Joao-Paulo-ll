@@ -1,27 +1,56 @@
 import { Link } from 'react-router-dom'
+import {
+  UserRound,
+  Target,
+  CalendarDays,
+  FileText,
+  MessageSquareText,
+  BarChart3,
+  Newspaper,
+  MessageCircle
+} from 'lucide-react'
+
+const menuItems = [
+  ['/#sobre', UserRound, 'Sobre'],
+  ['/#atuacao', Target, 'Atuação'],
+  ['/#agenda', CalendarDays, 'Agenda'],
+  ['/#proposicoes', FileText, 'Proposições'],
+  ['/#gabinete', MessageSquareText, 'Gabinete'],
+  ['/#transparencia', BarChart3, 'Transparência'],
+  ['/#noticias', Newspaper, 'Notícias'],
+  ['/#gabinete', MessageCircle, 'Fale com Andreia']
+]
 
 export default function Header() {
   return (
-    <header className="site-header">
-      <div className="container header-inner">
-        <Link to="/" className="brand">
-          <span className="brand-small">VEREADORA</span>
-          <strong>ANDREIA</strong>
-          <span>DO JOÃO PAULO II</span>
-        </Link>
+    <>
+      <header className="site-header liquid-top-header">
+        <div className="container header-inner liquid-header-inner">
+          <Link to="/" className="brand">
+            <span className="brand-small">VEREADORA</span>
+            <strong>ANDREIA</strong>
+            <span>DO JOÃO PAULO II</span>
+          </Link>
+        </div>
+      </header>
 
-        <nav className="nav">
-          <a href="#sobre">Sobre</a>
-          <a href="#atuacao">Atuação</a>
-          <a href="#agenda">Agenda</a>
-          <a href="#proposicoes">Proposições</a>
-          <a href="#gabinete">Gabinete Online</a>
-          <a href="#transparencia">Transparência</a>
-          <a href="#noticias">Notícias</a>
-        </nav>
-
-        <a className="btn btn-primary" href="#gabinete">Fale com a vereadora</a>
-      </div>
-    </header>
+      <nav className="liquid-bottom-nav" aria-label="Menu principal">
+        <div className="liquid-bottom-nav-inner">
+          {menuItems.map(([href, Icon, label], index) => (
+            <a
+              key={`${href}-${label}`}
+              href={href}
+              className={`liquid-nav-item ${index === menuItems.length - 1 ? 'liquid-nav-cta' : ''}`}
+              aria-label={label}
+            >
+              <span className="liquid-nav-icon">
+                <Icon size={19} strokeWidth={2.1} />
+              </span>
+              <span className="liquid-nav-label">{label}</span>
+            </a>
+          ))}
+        </div>
+      </nav>
+    </>
   )
 }
