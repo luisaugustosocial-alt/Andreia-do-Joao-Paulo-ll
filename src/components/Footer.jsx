@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { listenCollection } from '../services/firestore'
 
 export default function Footer() {
@@ -40,6 +41,10 @@ export default function Footer() {
           <strong>Bom Jesus da Lapa - Bahia</strong>
           <p>Site institucional do mandato parlamentar.</p>
           {config?.email && <a className="footer-email" href={`mailto:${config.email}`}>{config.email}</a>}
+          <div className="footer-legal-links">
+            <Link to="/politica-de-privacidade">Política de Privacidade</Link>
+            <Link to="/termos-de-uso">Termos de Uso</Link>
+          </div>
         </div>
       </div>
 
