@@ -45,6 +45,13 @@ patch('src/pages/Home.jsx', home => {
     home=home.replace(anchor,modal)
   }
 
+  if(!home.includes('liquid-tracking-close')){
+    home=home.replace(
+      '<div className="tracking-result">',
+      `<div className="tracking-result">\n                  <button\n                    type="button"\n                    className="liquid-modal-close liquid-tracking-close"\n                    onClick={() => setTrackingResult(null)}\n                    aria-label="Fechar resultado do protocolo"\n                  >×</button>`
+    )
+  }
+
   return home
 })
 
