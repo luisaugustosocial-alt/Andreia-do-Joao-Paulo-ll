@@ -1,0 +1,144 @@
+/* Animações suaves do site público */
+.motion-reveal{
+  opacity:0;
+  transform:translateY(24px) scale(.985);
+  transition:
+    opacity .62s cubic-bezier(.22,.8,.2,1) var(--motion-delay,0ms),
+    transform .62s cubic-bezier(.22,.8,.2,1) var(--motion-delay,0ms);
+  will-change:opacity,transform;
+}
+
+.motion-reveal.motion-visible{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+
+.hero-image.motion-reveal,
+.news-card.motion-reveal,
+.office-card.motion-reveal,
+.stat-card.motion-reveal{
+  transform:translateY(20px) scale(.97);
+}
+
+.hero-image.motion-visible,
+.news-card.motion-visible,
+.office-card.motion-visible,
+.stat-card.motion-visible{
+  transform:translateY(0) scale(1);
+}
+
+/* Entrada de pop-ups */
+.liquid-modal-backdrop,
+.news-modal-backdrop{
+  animation:motionBackdropIn .2s ease both;
+}
+
+.liquid-modal-card,
+.news-modal{
+  animation:motionModalPopIn .34s cubic-bezier(.2,.9,.25,1.18) both;
+  transform-origin:center center;
+}
+
+.public-detail-panel,
+.tracking-result{
+  animation:motionFixedPopIn .34s cubic-bezier(.2,.9,.25,1.16) both;
+  transform-origin:center center;
+}
+
+/* Saída de pop-ups */
+.motion-closing{
+  animation:motionBackdropOut .19s ease both!important;
+}
+
+.motion-closing .liquid-modal-card,
+.motion-closing .news-modal{
+  animation:motionModalPopOut .19s cubic-bezier(.55,0,.9,.55) both!important;
+}
+
+.tracking-result.motion-closing,
+.public-detail-panel.motion-closing{
+  animation:motionFixedPopOut .19s cubic-bezier(.55,0,.9,.55) both!important;
+}
+
+@keyframes motionBackdropIn{
+  from{opacity:0}
+  to{opacity:1}
+}
+
+@keyframes motionBackdropOut{
+  from{opacity:1}
+  to{opacity:0}
+}
+
+@keyframes motionModalPopIn{
+  0%{opacity:0;transform:translateY(14px) scale(.9)}
+  68%{opacity:1;transform:translateY(-2px) scale(1.018)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+
+@keyframes motionModalPopOut{
+  from{opacity:1;transform:translateY(0) scale(1)}
+  to{opacity:0;transform:translateY(10px) scale(.94)}
+}
+
+@keyframes motionFixedPopIn{
+  0%{opacity:0;transform:translate(-50%,-47%) scale(.9)}
+  68%{opacity:1;transform:translate(-50%,-50.5%) scale(1.015)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+
+@keyframes motionFixedPopOut{
+  from{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  to{opacity:0;transform:translate(-50%,-47%) scale(.94)}
+}
+
+/* Pequena resposta visual dos botões */
+.btn,
+.liquid-status-button,
+.office-link,
+.read-news,
+.public-detail-head button,
+.news-modal-close,
+.liquid-modal-close{
+  transition:transform .17s ease, box-shadow .17s ease, opacity .17s ease;
+}
+
+.btn:active,
+.liquid-status-button:active,
+.office-link:active,
+.public-detail-head button:active,
+.news-modal-close:active,
+.liquid-modal-close:active{
+  transform:scale(.95);
+}
+
+@media (max-width:640px){
+  .motion-reveal{
+    transform:translateY(18px) scale(.99);
+    transition-duration:.52s;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .motion-reveal,
+  .motion-reveal.motion-visible,
+  .liquid-modal-backdrop,
+  .news-modal-backdrop,
+  .liquid-modal-card,
+  .news-modal,
+  .public-detail-panel,
+  .tracking-result,
+  .motion-closing,
+  .motion-closing .liquid-modal-card,
+  .motion-closing .news-modal{
+    animation:none!important;
+    transition:none!important;
+    opacity:1!important;
+    transform:none;
+  }
+
+  .public-detail-panel,
+  .tracking-result{
+    transform:translate(-50%,-50%)!important;
+  }
+}
