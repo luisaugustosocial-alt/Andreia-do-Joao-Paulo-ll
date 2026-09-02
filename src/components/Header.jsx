@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 export default function Header() {
+  const location = useLocation()
+  const homeHref = id => location.pathname === '/' ? `#${id}` : `/#${id}`
+
   return (
     <header className="site-header">
       <div className="container header-inner">
@@ -11,16 +14,16 @@ export default function Header() {
         </Link>
 
         <nav className="nav">
-          <a href="#sobre">Sobre</a>
-          <a href="#atuacao">Atuação</a>
-          <a href="#agenda">Agenda</a>
-          <a href="#proposicoes">Proposições</a>
-          <a href="#gabinete">Gabinete Online</a>
-          <a href="#transparencia">Transparência</a>
-          <a href="#noticias">Notícias</a>
+          <Link to="/perfil">Perfil</Link>
+          <a href={homeHref('atuacao')}>Atuação</a>
+          <a href={homeHref('agenda')}>Agenda</a>
+          <a href={homeHref('proposicoes')}>Proposições</a>
+          <a href={homeHref('gabinete')}>Gabinete Online</a>
+          <a href={homeHref('transparencia')}>Transparência</a>
+          <a href={homeHref('noticias')}>Notícias</a>
         </nav>
 
-        <a className="btn btn-primary" href="#gabinete">Fale com a vereadora</a>
+        <a className="btn btn-primary" href={homeHref('gabinete')}>Fale com a vereadora</a>
       </div>
     </header>
   )
