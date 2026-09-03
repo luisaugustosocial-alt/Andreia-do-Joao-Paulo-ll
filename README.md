@@ -1,27 +1,20 @@
 # Site da Vereadora Andreia do João Paulo II
 
-Projeto React + Vite preparado para GitHub e Vercel.
+Projeto React + Vite publicado pela Vercel e integrado ao Firebase.
 
 ## Rotas
 - `/` — site público
-- `/admin` — painel administrativo visual
+- `/admin` — painel administrativo
+- `/admin/login` — acesso administrativo
 
-## Importante
-Nesta versão, o painel administrativo é funcional apenas na interface.
-A próxima etapa é conectar Firebase Authentication, Firestore e Storage para:
-- login do administrador;
-- salvar demandas;
-- editar agenda;
-- publicar notícias;
-- atualizar requerimentos/projetos;
-- atualizar presença nas sessões;
-- enviar fotos;
-- acompanhar status das demandas;
-- gerar e consultar protocolos.
+## Recursos atuais
+- Gabinete Online com protocolo e acompanhamento;
+- agenda, notícias, proposições e transparência;
+- linha do tempo administrável;
+- mandatos anteriores organizados em pastas e subpastas por tipo de registro;
+- upload de imagens via ImageKit;
+- área administrativa com edição e exclusão de registros;
+- layout responsivo e correções para dispositivos móveis.
 
 ## Deploy
-1. Envie todos os arquivos para um repositório GitHub.
-2. Importe o repositório no Vercel.
-3. Framework preset: Vite.
-4. Build command: `npm run build`
-5. Output directory: `dist`
+O projeto usa `npm run build` e gera a pasta `dist` para publicação na Vercel.
