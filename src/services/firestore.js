@@ -14,35 +14,99 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 
+const FEATURE_FALLBACKS = new Set(['linha_do_tempo', 'mandatos_anteriores'])
+
+function isPermissionLikeError(error) {
+  const code = String(error?.code || '')
+  return code.includes('permission-denied') || code.includes('failed-precondition')
+}
+
+function featurePayload(name, data) {
+  return {
+    ...data,
+    _feature: name,
+    updatedAt: serverTimestamp()
+  }
+}
+
 export function listenCollection(name, callback) {
+  let fallbackStop = null
+  let stopped = false
+
   const q = query(collection(db, name), orderBy('createdAt', 'desc'))
-  return onSnapshot(
+  const primaryStop = onSnapshot(
     q,
     snapshot => callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))),
     error => {
       console.error(`Erro ao ler ${name}:`, error)
+
+      if (FEATURE_FALLBACKS.has(name) && isPermissionLikeError(error)) {
+        const fallbackQuery = query(collection(db, 'acoes'), orderBy('createdAt', 'desc'))
+        fallbackStop = onSnapshot(
+          fallbackQuery,
+          snapshot => {
+            if (stopped) return
+            const items = snapshot.docs
+              .map(d => ({ id: d.id, ...d.data() }))
+              .filter(item => item._feature === name)
+            callback(items)
+          },
+          fallbackError => {
+            console.error(`Erro ao ler fallback de ${name}:`, fallbackError)
+            if (!stopped) callback([])
+          }
+        )
+        return
+      }
+
       callback([])
     }
   )
+
+  return () => {
+    stopped = true
+    try { primaryStop?.() } catch {}
+    try { fallbackStop?.() } catch {}
+  }
 }
 
 export async function createDocument(name, data) {
-  return addDoc(collection(db, name), {
-    ...data,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  })
+  try {
+    return await addDoc(collection(db, name), {
+      ...data,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    })
+  } catch (error) {
+    if (!FEATURE_FALLBACKS.has(name) || !isPermissionLikeError(error)) throw error
+
+    return addDoc(collection(db, 'acoes'), {
+      ...featurePayload(name, data),
+      createdAt: serverTimestamp()
+    })
+  }
 }
 
 export async function updateDocument(name, id, data) {
-  return updateDoc(doc(db, name, id), {
-    ...data,
-    updatedAt: serverTimestamp()
-  })
+  try {
+    return await updateDoc(doc(db, name, id), {
+      ...data,
+      updatedAt: serverTimestamp()
+    })
+  } catch (error) {
+    if (!FEATURE_FALLBACKS.has(name) || !isPermissionLikeError(error)) throw error
+
+    return updateDoc(doc(db, 'acoes', id), featurePayload(name, data))
+  }
 }
 
 export async function removeDocument(name, id) {
-  return deleteDoc(doc(db, name, id))
+  try {
+    return await deleteDoc(doc(db, name, id))
+  } catch (error) {
+    if (!FEATURE_FALLBACKS.has(name) || !isPermissionLikeError(error)) throw error
+    return deleteDoc(doc(db, 'acoes', id))
+  }
 }
 
 function normalizeProtocol(protocol) {
