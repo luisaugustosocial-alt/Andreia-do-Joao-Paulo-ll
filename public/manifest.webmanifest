@@ -1,0 +1,34 @@
+{
+  "name": "Painel do Mandato — Andreia do João Paulo II",
+  "short_name": "Painel Andreia",
+  "description": "Aplicativo administrativo do mandato de Andreia do João Paulo II.",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#f4f1f8",
+  "theme_color": "#5421a6",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/admin-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Abrir painel",
+      "short_name": "Painel",
+      "url": "/admin"
+    },
+    {
+      "name": "Login administrativo",
+      "short_name": "Login",
+      "url": "/admin/login"
+    }
+  ]
+}
