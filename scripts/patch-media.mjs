@@ -3,9 +3,12 @@ import fs from 'node:fs'
 const path = 'src/pages/Admin.jsx'
 if (fs.existsSync(path)) {
   let admin = fs.readFileSync(path, 'utf8')
-  admin = admin.replace(
-    `{tab === 'midia' && <Placeholder title="Fotos e mídia" text="O upload de imagens pelo Firebase Storage será a próxima etapa." />}`,
-    `{tab === 'midia' && <Placeholder title="Fotos e mídia" text="As imagens do site são armazenadas e gerenciadas pelo ImageKit. O upload já está integrado às publicações, como notícias e demais conteúdos com imagem." />}`
-  )
+
+  // Remove a opção Fotos e mídia do menu administrativo.
+  admin = admin.replace(/\n\s*\['midia',\s*Image,\s*'Fotos e mídia'\],?/, '')
+
+  // Remove a tela correspondente caso ainda exista no arquivo-base.
+  admin = admin.replace(/\n\s*\{tab === 'midia' && <Placeholder title="Fotos e mídia"[^\n]*\}/, '')
+
   fs.writeFileSync(path, admin, 'utf8')
 }
