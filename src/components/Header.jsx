@@ -7,17 +7,21 @@ import {
   MessageSquareText,
   BarChart3,
   Newspaper,
-  MessageCircle
+  MessageCircle,
+  History,
+  FolderOpen
 } from 'lucide-react'
 
 const menuItems = [
   ['/#sobre', UserRound, 'Sobre'],
+  ['/#trajetoria', History, 'Linha do tempo'],
   ['/#atuacao', Target, 'Atuação'],
   ['/#agenda', CalendarDays, 'Agenda'],
   ['/#proposicoes', FileText, 'Proposições'],
   ['/#gabinete', MessageSquareText, 'Gabinete'],
   ['/#transparencia', BarChart3, 'Transparência'],
   ['/#noticias', Newspaper, 'Notícias'],
+  ['/#mandatos-anteriores', FolderOpen, 'Mandatos anteriores'],
   ['/#form-demanda', MessageCircle, 'Fale com a vereadora']
 ]
 
