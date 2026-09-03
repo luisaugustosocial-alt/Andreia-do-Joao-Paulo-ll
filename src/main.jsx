@@ -10,6 +10,14 @@ import './styles/modal-position-fix.css'
 import './utils/date-dom'
 import './utils/motion'
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(error => {
+      console.warn('Service Worker não registrado:', error)
+    })
+  })
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
