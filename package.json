@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/patch-site.mjs && node scripts/patch-collaborators.mjs && node scripts/patch-responder.mjs && node scripts/patch-media.mjs && node scripts/run-trajetoria-mandatos.mjs && vite",
-    "build": "node scripts/patch-site.mjs && node scripts/patch-collaborators.mjs && node scripts/patch-responder.mjs && node scripts/patch-media.mjs && node scripts/run-trajetoria-mandatos.mjs && vite build",
+    "dev": "node scripts/patch-site.mjs && node scripts/patch-collaborators.mjs && node scripts/patch-responder.mjs && node scripts/patch-media.mjs && node scripts/run-trajetoria-mandatos.mjs && node scripts/patch-nome-andreia.mjs && vite",
+    "build": "node scripts/patch-site.mjs && node scripts/patch-collaborators.mjs && node scripts/patch-responder.mjs && node scripts/patch-media.mjs && node scripts/run-trajetoria-mandatos.mjs && node scripts/patch-nome-andreia.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
