@@ -18,7 +18,7 @@ const menuItems = [
   ['/#gabinete', MessageSquareText, 'Gabinete'],
   ['/#transparencia', BarChart3, 'Transparência'],
   ['/#noticias', Newspaper, 'Notícias'],
-  ['/#gabinete', MessageCircle, 'Fale com a vereadora']
+  ['/#form-demanda', MessageCircle, 'Fale com a vereadora']
 ]
 
 export default function Header() {
